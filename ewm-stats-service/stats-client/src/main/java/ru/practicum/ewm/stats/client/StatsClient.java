@@ -19,7 +19,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Objects;
 
 @Component
 public class StatsClient {
@@ -72,8 +71,9 @@ public class StatsClient {
 
 
     public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
-        Objects.requireNonNull(start, "Start date is required");
-        Objects.requireNonNull(end, "End date is required");
+        if (start == null || end == null) {
+            throw new IllegalArgumentException("Start and end dates must not be null");
+        }
 
         if (start.isAfter(end)) {
             throw new IllegalArgumentException("Start date must not be after end date");

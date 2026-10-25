@@ -257,12 +257,12 @@ class StatsClientTest {
         LocalDateTime date = LocalDateTime.of(2026, 10, 24, 18, 0);
 
         assertThrows(
-                NullPointerException.class,
+                IllegalArgumentException.class,
                 () -> client.getStats(null, date, null, false)
         );
 
         assertThrows(
-                NullPointerException.class,
+                IllegalArgumentException.class,
                 () -> client.getStats(date, null, null, false)
         );
     }
