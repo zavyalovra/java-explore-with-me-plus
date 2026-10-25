@@ -77,14 +77,21 @@ class StatsServiceIntegrationTest {
     @Test
     void shouldFilterByUrisAndCountUniqueIps() {
         saveHit(FIRST_URI, "10.0.0.1", START.plusHours(1));
-        saveHit(FIRST_URI, "10.0.0.2", START.plusHours(2));
-        saveHit(SECOND_URI, "10.0.0.3", START.plusHours(3));
+        saveHit(FIRST_URI, "10.0.0.1", START.plusHours(2));
+        saveHit(FIRST_URI, "10.0.0.2", START.plusHours(3));
+        saveHit(SECOND_URI, "10.0.0.3", START.plusHours(4));
 
-        List<ViewStatsDto> stats = statsService.getStats(START, END, List.of(FIRST_URI), true);
+        List<ViewStatsDto> all = statsService.getStats(START, END, List.of(FIRST_URI), false);
 
-        assertThat(stats).hasSize(1);
-        assertThat(stats.get(0).getUri()).isEqualTo(FIRST_URI);
-        assertThat(stats.get(0).getHits()).isEqualTo(2L);
+        assertThat(all).hasSize(1);
+        assertThat(all.get(0).getUri()).isEqualTo(FIRST_URI);
+        assertThat(all.get(0).getHits()).isEqualTo(3L);
+
+        List<ViewStatsDto> unique = statsService.getStats(START, END, List.of(FIRST_URI), true);
+
+        assertThat(unique).hasSize(1);
+        assertThat(unique.get(0).getUri()).isEqualTo(FIRST_URI);
+        assertThat(unique.get(0).getHits()).isEqualTo(2L);
     }
 
     @Test
