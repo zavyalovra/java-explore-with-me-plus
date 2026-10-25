@@ -9,6 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -96,6 +97,20 @@ class StatsControllerTest {
                         .content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value("BAD_REQUEST"));
+    }
+
+    @Test
+    void shouldRejectTooLongUri() throws Exception {
+        String longUri = "/events/" + "a".repeat(520);
+        String body = "{\"app\":\"ewm-main-service\",\"uri\":\"" + longUri + "\",\"ip\":\"10.0.0.1\","
+                + "\"timestamp\":\"2024-01-01 10:00:00\"}";
+
+        mockMvc.perform(post("/hit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message").value(containsString("512")));
     }
 
     private void saveHit(String uri, String ip) throws Exception {
