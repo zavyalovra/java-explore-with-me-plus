@@ -41,5 +41,5 @@ public record UpdateEventAdminRequest(
         @Pattern(regexp = "(?s).*\\S.*")
         String title
 
-) {
+) implements EventUpdateData {
 }
