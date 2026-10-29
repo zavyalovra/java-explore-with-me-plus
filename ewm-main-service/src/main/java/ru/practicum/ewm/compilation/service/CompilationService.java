@@ -2,11 +2,11 @@ package ru.practicum.ewm.compilation.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.ewm.common.PageRequestFactory;
 import ru.practicum.ewm.compilation.dto.CompilationDto;
 import ru.practicum.ewm.compilation.dto.NewCompilationDto;
 import ru.practicum.ewm.compilation.dto.UpdateCompilationRequest;
@@ -16,7 +16,6 @@ import ru.practicum.ewm.compilation.model.CompilationEvent;
 import ru.practicum.ewm.compilation.model.CompilationEventId;
 import ru.practicum.ewm.compilation.repository.CompilationEventRepository;
 import ru.practicum.ewm.compilation.repository.CompilationRepository;
-import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
 
@@ -84,9 +83,7 @@ public class CompilationService {
     }
 
     public List<CompilationDto> getAll(Boolean pinned, int from, int size) {
-        validatePagination(from, size);
-
-        Pageable pageable = PageRequest.of(from / size, size, DEFAULT_SORT);
+        Pageable pageable = PageRequestFactory.create(from, size, DEFAULT_SORT);
         Page<Compilation> page = pinned == null
                 ? compilationRepository.findAll(pageable)
                 : compilationRepository.findAllByPinned(pinned, pageable);
@@ -94,15 +91,6 @@ public class CompilationService {
         return page.getContent().stream()
                 .map(compilationMapper::toDto)
                 .toList();
-    }
-
-    private void validatePagination(int from, int size) {
-        if (from < 0) {
-            throw new BadRequestException("Параметр 'from' должен быть больше или равен 0");
-        }
-        if (size <= 0) {
-            throw new BadRequestException("Параметр 'size' должен быть больше 0");
-        }
     }
 
     private Compilation findCompilation(Long compilationId) {
