@@ -23,6 +23,9 @@ import ru.practicum.ewm.comment.repository.CommentRepository;
 import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.ForbiddenException;
+import ru.practicum.ewm.event.model.Event;
+import ru.practicum.ewm.event.model.EventState;
+import ru.practicum.ewm.event.repository.EventRepository;
 import ru.practicum.ewm.exception.NotFoundException;
 import ru.practicum.ewm.user.model.User;
 import ru.practicum.ewm.user.repository.UserRepository;
@@ -40,7 +43,6 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class CommentService {
 
-    private static final String PUBLISHED_STATE = "PUBLISHED";
     private static final Sort DEFAULT_SORT = Sort.by(Sort.Direction.DESC, "createdOn")
             .and(Sort.by(Sort.Direction.DESC, "id"));
 
@@ -48,15 +50,15 @@ public class CommentService {
     private final CommentLikeRepository commentLikeRepository;
     private final CommentMapper commentMapper;
     private final UserRepository userRepository;
-    private final ReferenceDataService referenceDataService;
+    private final EventRepository eventRepository;
 
     @Transactional
     public CommentDto create(Long userId, NewCommentDto newCommentDto) {
         requireUser(userId);
-        String eventState = referenceDataService.findEventState(newCommentDto.getEventId())
+        Event event = eventRepository.findById(newCommentDto.getEventId())
                 .orElseThrow(() -> new NotFoundException("Event with id=" + newCommentDto.getEventId()
                         + " was not found"));
-        if (!PUBLISHED_STATE.equals(eventState)) {
+        if (event.getState() != EventState.PUBLISHED) {
             throw new ConflictException("Event with id=" + newCommentDto.getEventId() + " is not published");
         }
 
@@ -192,7 +194,7 @@ public class CommentService {
     }
 
     private void requireEvent(Long eventId) {
-        if (referenceDataService.findEventState(eventId).isEmpty()) {
+        if (!eventRepository.existsById(eventId)) {
             throw new NotFoundException("Event with id=" + eventId + " was not found");
         }
     }
