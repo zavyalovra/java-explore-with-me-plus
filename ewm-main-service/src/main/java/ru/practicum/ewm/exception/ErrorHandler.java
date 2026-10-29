@@ -24,6 +24,7 @@ public class ErrorHandler {
     private static final String NOT_FOUND_REASON = "The required object was not found.";
     private static final String CONFLICT_REASON = "Integrity constraint has been violated.";
     private static final String BAD_REQUEST_REASON = "Incorrectly made request.";
+    private static final String FORBIDDEN_REASON = "Access is denied.";
 
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
@@ -41,6 +42,12 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleBadRequest(BadRequestException exception) {
         return buildError(HttpStatus.BAD_REQUEST, BAD_REQUEST_REASON, exception.getMessage());
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiError handleForbidden(ForbiddenException exception) {
+        return buildError(HttpStatus.FORBIDDEN, FORBIDDEN_REASON, exception.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
