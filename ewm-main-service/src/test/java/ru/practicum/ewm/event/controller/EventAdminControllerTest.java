@@ -243,7 +243,7 @@ class EventAdminControllerTest {
         mockMvc.perform(patch("/admin/events/{eventId}", event.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"stateAction\":\"PUBLISH_EVENT\"}"))
-                .andExpect(status().isConflict());
+                .andExpect(status().isBadRequest());
 
         Event saved = eventRepository.findById(event.getId())
                 .orElseThrow();

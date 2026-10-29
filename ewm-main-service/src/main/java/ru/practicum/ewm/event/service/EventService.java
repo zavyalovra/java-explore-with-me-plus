@@ -51,7 +51,7 @@ public class EventService {
     public EventFullDto create(Long userId, NewEventDto dto) {
 
         if (dto.eventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-            throw new ConflictException("Event must start at least 2 hours from now");
+            throw new BadRequestException("Event must start at least 2 hours from now");
         }
 
         User initiator = userRepository.findById(userId)
@@ -96,18 +96,10 @@ public class EventService {
         LocalDateTime eventDate = request.eventDate() != null ? request.eventDate() : event.getEventDate();
 
         if (eventDate.isBefore(LocalDateTime.now().plusHours(2))) {
-            throw new ConflictException("Event date must be at least 2 hours from now");
+            throw new BadRequestException("Event date must be at least 2 hours from now");
         }
 
         applyCommonUpdates(event, request);
-
-        if (request.category() != null) {
-            Category category = categoryRepository
-                    .findById(request.category())
-                    .orElseThrow(() -> new NotFoundException("Category with id=" + request.category() + " was not found"));
-
-            event.setCategory(category);
-        }
 
         if (request.stateAction() != null) {
             switch (request.stateAction()) {
@@ -140,7 +132,7 @@ public class EventService {
 
         if (request.eventDate() != null || publishing) {
             if (finalEventDate.isBefore(now.plusHours(1))) {
-                throw new ConflictException("Event must start at least 1 hour from now");
+                throw new BadRequestException("Event must start at least 1 hour from now");
             }
         }
 

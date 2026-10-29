@@ -323,6 +323,6 @@ class EventPrivateControllerTest {
                 )
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
-                .andExpect(status().isConflict());
+                .andExpect(status().isBadRequest());
     }
 }
