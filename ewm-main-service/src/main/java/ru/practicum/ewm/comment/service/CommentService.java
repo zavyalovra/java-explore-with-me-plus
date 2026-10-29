@@ -24,12 +24,15 @@ import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.ForbiddenException;
 import ru.practicum.ewm.exception.NotFoundException;
-import ru.practicum.ewm.user.dto.UserShortDto;
+import ru.practicum.ewm.user.model.User;
+import ru.practicum.ewm.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +47,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final CommentMapper commentMapper;
+    private final UserRepository userRepository;
     private final ReferenceDataService referenceDataService;
 
     @Transactional
@@ -182,7 +186,7 @@ public class CommentService {
     }
 
     private void requireUser(Long userId) {
-        if (referenceDataService.findUserName(userId).isEmpty()) {
+        if (!userRepository.existsById(userId)) {
             throw new NotFoundException("User with id=" + userId + " was not found");
         }
     }
@@ -201,13 +205,9 @@ public class CommentService {
     }
 
     private CommentDto toDto(Comment comment) {
-        String authorName = referenceDataService.findUserName(comment.getAuthorId()).orElse(null);
         long likes = commentLikeRepository.countById_CommentId(comment.getId());
-        UserShortDto author = UserShortDto.builder()
-                .id(comment.getAuthorId())
-                .name(authorName)
-                .build();
-        return commentMapper.toDto(comment, author, likes);
+        Map<Long, User> authors = findAuthors(Set.of(comment.getAuthorId()));
+        return commentMapper.toDto(comment, authors, likes);
     }
 
     private List<CommentDto> toDtoList(List<Comment> comments) {
@@ -222,11 +222,16 @@ public class CommentService {
                 .map(Comment::getId)
                 .toList();
 
-        Map<Long, String> authorNames = referenceDataService.findUserNames(authorIds);
+        Map<Long, User> authors = findAuthors(authorIds);
         Map<Long, Long> likes = commentLikeRepository.countByCommentIds(commentIds).stream()
                 .collect(Collectors.toMap(CommentLikeCount::getCommentId, CommentLikeCount::getLikes));
 
-        return commentMapper.toDtoList(comments, authorNames, likes);
+        return commentMapper.toDtoList(comments, authors, likes);
+    }
+
+    private Map<Long, User> findAuthors(Collection<Long> authorIds) {
+        return userRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
     }
 
     private void validatePagination(int from, int size) {
