@@ -12,11 +12,11 @@ public class OffsetPageRequest implements Pageable {
 
     public OffsetPageRequest(long offset, int size, Sort sort) {
         if (offset < 0) {
-            throw new BadRequestException("from must not be negative");
+            throw new BadRequestException("Параметр from не может быть отрицательным");
         }
 
         if (size <= 0) {
-            throw new BadRequestException("size must be positive");
+            throw new BadRequestException("Параметр size должен быть больше нуля");
         }
 
         this.offset = offset;
@@ -66,7 +66,7 @@ public class OffsetPageRequest implements Pageable {
     @Override
     public Pageable withPage(int pageNumber) {
         if (pageNumber < 0) {
-            throw new BadRequestException("Page number must not be negative");
+            throw new BadRequestException("Номер страницы не может быть отрицательным");
         }
 
         return new OffsetPageRequest(

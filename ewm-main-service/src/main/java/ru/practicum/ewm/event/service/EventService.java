@@ -51,14 +51,14 @@ public class EventService {
     public EventFullDto create(Long userId, NewEventDto dto) {
 
         if (dto.eventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-            throw new BadRequestException("Event must start at least 2 hours from now");
+            throw new BadRequestException("Событие должно начинаться не раньше чем через 2 часа");
         }
 
         User initiator = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User with id=" + userId + " was not found"));
+                .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
 
         Category category = categoryRepository.findById(dto.category())
-                .orElseThrow(() -> new NotFoundException("Category with id=" + dto.category() + " was not found"));
+                .orElseThrow(() -> new NotFoundException("Категория с ID " + dto.category() + " не найдена"));
 
         Event event = eventMapper.toEntity(dto, initiator, category);
 
@@ -78,7 +78,7 @@ public class EventService {
     public EventFullDto getUserEventById(Long userId, Long eventId) {
         Event event = eventRepository
                 .findByIdAndInitiator_Id(eventId, userId)
-                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found for user=" + userId));
+                .orElseThrow(() -> new NotFoundException("Событие с ID " + eventId + " не найдено у пользователя с ID" + userId));
 
         return eventResponseService.toFullDto(event);
     }
@@ -87,16 +87,16 @@ public class EventService {
     public EventFullDto updateUserEvent(Long userId, Long eventId, UpdateEventUserRequest request) {
         Event event = eventRepository
                 .findByIdAndInitiator_Id(eventId, userId)
-                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found for user=" + userId));
+                .orElseThrow(() -> new NotFoundException("Событие с ID " + eventId + " не найдено у пользователя с ID" + userId));
 
         if (event.getState() == EventState.PUBLISHED) {
-            throw new ConflictException("Published event cannot be updated by initiator");
+            throw new ConflictException("Организатор не может изменять опубликованное событие");
         }
 
         LocalDateTime eventDate = request.eventDate() != null ? request.eventDate() : event.getEventDate();
 
         if (eventDate.isBefore(LocalDateTime.now().plusHours(2))) {
-            throw new BadRequestException("Event date must be at least 2 hours from now");
+            throw new BadRequestException("Дата события должна быть не раньше чем через 2 часа");
         }
 
         applyCommonUpdates(event, request);
@@ -117,7 +117,7 @@ public class EventService {
     @Transactional
     public EventFullDto updateAdminEvent(Long eventId, UpdateEventAdminRequest request) {
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+                .orElseThrow(() -> new NotFoundException("Событие с ID " + eventId + " не найдено"));
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -132,16 +132,16 @@ public class EventService {
 
         if (request.eventDate() != null || publishing) {
             if (finalEventDate.isBefore(now.plusHours(1))) {
-                throw new BadRequestException("Event must start at least 1 hour from now");
+                throw new BadRequestException("Событие должно начинаться не раньше чем через 1 час");
             }
         }
 
         if (publishing && event.getState() != EventState.PENDING) {
-            throw new ConflictException("Only pending events can be published");
+            throw new ConflictException("Опубликовать можно только событие в статусе PENDING");
         }
 
         if (action == AdminEventStateAction.REJECT_EVENT && event.getState() == EventState.PUBLISHED) {
-            throw new ConflictException("Published event cannot be rejected");
+            throw new ConflictException("Нельзя отклонить опубликованное событие");
         }
 
         applyCommonUpdates(event, request);
@@ -171,7 +171,7 @@ public class EventService {
             int size
     ) {
         if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
-            throw new BadRequestException("rangeStart must not be after rangeEnd");
+            throw new BadRequestException("Параметр rangeStart не может быть позже rangeEnd");
         }
 
         Pageable pageable = new OffsetPageRequest(from, size, DEFAULT_SORT);
@@ -195,7 +195,7 @@ public class EventService {
     public EventFullDto getPublicEventById(Long eventId, HttpServletRequest request) {
         Event event = eventRepository
                 .findByIdAndState(eventId, EventState.PUBLISHED)
-                .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+                .orElseThrow(() -> new NotFoundException("Событие с ID " + eventId + " не найдено"));
 
         EndpointHitDto hit = EndpointHitDto.builder()
                 .app("ewm-main-service")
@@ -222,11 +222,11 @@ public class EventService {
             HttpServletRequest request
     ) {
         if (text != null && (text.isBlank() || text.length() > 7000)) {
-            throw new BadRequestException("Invalid search text");
+            throw new BadRequestException("Некорректный текст поиска");
         }
 
         if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
-            throw new BadRequestException("rangeStart must not be after rangeEnd");
+            throw new BadRequestException("Параметр rangeStart не может быть позже rangeEnd");
         }
 
         if (rangeStart == null && rangeEnd == null) {
@@ -344,7 +344,7 @@ public class EventService {
         if (request.category() != null) {
             Category category = categoryRepository
                     .findById(request.category())
-                    .orElseThrow(() -> new NotFoundException("Category with id=" + request.category() + " was not found"));
+                    .orElseThrow(() -> new NotFoundException("Категория с ID " + request.category() + " не найдена"));
 
             event.setCategory(category);
         }
