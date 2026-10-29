@@ -18,10 +18,11 @@ public class CompilationMapper {
     }
 
     public CompilationDto toDto(Compilation compilation) {
-        return new CompilationDto(
-                compilation.getId(),
-                compilation.getTitle(),
-                compilation.isPinned(),
-                List.of());
+        return CompilationDto.builder()
+                .id(compilation.getId())
+                .title(compilation.getTitle())
+                .pinned(compilation.isPinned())
+                .events(List.of())
+                .build();
     }
 }

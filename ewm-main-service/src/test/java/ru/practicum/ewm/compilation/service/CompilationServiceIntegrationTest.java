@@ -66,12 +66,12 @@ class CompilationServiceIntegrationTest {
 
         CompilationDto created = compilationService.create(dto);
 
-        assertNotNull(created.id());
-        assertEquals("С событиями", created.title());
-        assertTrue(created.pinned());
-        assertTrue(created.events().isEmpty());
+        assertNotNull(created.getId());
+        assertEquals("С событиями", created.getTitle());
+        assertTrue(created.getPinned());
+        assertTrue(created.getEvents().isEmpty());
 
-        List<CompilationEvent> links = compilationEventRepository.findByIdCompilationId(created.id());
+        List<CompilationEvent> links = compilationEventRepository.findByIdCompilationId(created.getId());
         assertEquals(2, links.size());
         assertEquals(Set.of(1L, 2L), Set.copyOf(links.stream()
                 .map(link -> link.getId().getEventId())
@@ -83,11 +83,11 @@ class CompilationServiceIntegrationTest {
         CompilationDto created = compilationService.create(
                 new NewCompilationDto("Подборка", false, Set.of(1L, 2L)));
 
-        compilationService.update(created.id(), new UpdateCompilationRequest(null, null, Set.of(2L)));
+        compilationService.update(created.getId(), new UpdateCompilationRequest(null, null, Set.of(2L)));
 
-        List<CompilationEvent> links = compilationEventRepository.findByIdCompilationId(created.id());
+        List<CompilationEvent> links = compilationEventRepository.findByIdCompilationId(created.getId());
         assertEquals(1, links.size());
-        assertEquals(2L, links.getFirst().getId().getEventId());
+        assertEquals(2L, links.get(0).getId().getEventId());
     }
 
     @Test
@@ -95,9 +95,9 @@ class CompilationServiceIntegrationTest {
         CompilationDto created = compilationService.create(
                 new NewCompilationDto("Подборка", false, Set.of(1L)));
 
-        compilationService.update(created.id(), new UpdateCompilationRequest(null, null, Set.of()));
+        compilationService.update(created.getId(), new UpdateCompilationRequest(null, null, Set.of()));
 
-        assertTrue(compilationEventRepository.findByIdCompilationId(created.id()).isEmpty());
+        assertTrue(compilationEventRepository.findByIdCompilationId(created.getId()).isEmpty());
     }
 
     @Test
@@ -105,10 +105,10 @@ class CompilationServiceIntegrationTest {
         CompilationDto created = compilationService.create(
                 new NewCompilationDto("Подборка", false, Set.of(1L)));
 
-        compilationService.update(created.id(), new UpdateCompilationRequest("Новое имя", true, null));
+        compilationService.update(created.getId(), new UpdateCompilationRequest("Новое имя", true, null));
 
-        assertEquals(1, compilationEventRepository.findByIdCompilationId(created.id()).size());
-        assertEquals("Новое имя", compilationService.getById(created.id()).title());
+        assertEquals(1, compilationEventRepository.findByIdCompilationId(created.getId()).size());
+        assertEquals("Новое имя", compilationService.getById(created.getId()).getTitle());
     }
 
     @Test
@@ -116,10 +116,10 @@ class CompilationServiceIntegrationTest {
         CompilationDto created = compilationService.create(
                 new NewCompilationDto("Удаляемая", false, Set.of(1L, 2L)));
 
-        compilationService.delete(created.id());
+        compilationService.delete(created.getId());
 
-        assertTrue(compilationRepository.findById(created.id()).isEmpty());
-        assertTrue(compilationEventRepository.findByIdCompilationId(created.id()).isEmpty());
+        assertTrue(compilationRepository.findById(created.getId()).isEmpty());
+        assertTrue(compilationEventRepository.findByIdCompilationId(created.getId()).isEmpty());
     }
 
     @Test
