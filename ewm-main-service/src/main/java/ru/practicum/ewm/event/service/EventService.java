@@ -78,7 +78,7 @@ public class EventService {
     public EventFullDto getUserEventById(Long userId, Long eventId) {
         Event event = eventRepository
                 .findByIdAndInitiator_Id(eventId, userId)
-                .orElseThrow(() -> new NotFoundException("Событие с ID " + eventId + " не найдено у пользователя с ID" + userId));
+                .orElseThrow(() -> new NotFoundException("Событие с ID " + eventId + " не найдено у пользователя с ID " + userId));
 
         return eventResponseService.toFullDto(event);
     }
@@ -87,7 +87,7 @@ public class EventService {
     public EventFullDto updateUserEvent(Long userId, Long eventId, UpdateEventUserRequest request) {
         Event event = eventRepository
                 .findByIdAndInitiator_Id(eventId, userId)
-                .orElseThrow(() -> new NotFoundException("Событие с ID " + eventId + " не найдено у пользователя с ID" + userId));
+                .orElseThrow(() -> new NotFoundException("Событие с ID " + eventId + " не найдено у пользователя с ID " + userId));
 
         if (event.getState() == EventState.PUBLISHED) {
             throw new ConflictException("Организатор не может изменять опубликованное событие");
