@@ -5,11 +5,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.ewm.compilation.model.Compilation;
+import ru.practicum.ewm.compilation.model.CompilationEvent;
+import ru.practicum.ewm.compilation.model.CompilationEventId;
 import ru.practicum.ewm.compilation.repository.CompilationEventRepository;
 import ru.practicum.ewm.compilation.repository.CompilationRepository;
+import ru.practicum.ewm.stats.client.StatsClient;
+
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -32,12 +40,29 @@ class CompilationPublicControllerTest {
     @Autowired
     private CompilationEventRepository compilationEventRepository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @MockBean
+    private StatsClient statsClient;
+
     private Compilation first;
 
     @BeforeEach
     void setUp() {
         compilationEventRepository.deleteAll();
         compilationRepository.deleteAll();
+        jdbcTemplate.update("delete from events");
+        jdbcTemplate.update("delete from categories");
+        jdbcTemplate.update("delete from users");
+
+        jdbcTemplate.update("insert into users (id, name, email) values (?, ?, ?)",
+                1L, "Иван", "ivan@mail.ru");
+        jdbcTemplate.update("insert into categories (id, name) values (?, ?)", 1L, "Концерты");
+        jdbcTemplate.update("insert into events (id, title, annotation, description, category_id, "
+                        + "initiator_id, event_date, lat, lon) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                1L, "Событие 1", "Аннотация события", "Описание события", 1L, 1L,
+                Timestamp.valueOf(LocalDateTime.now().plusDays(1)), 55.75, 37.61);
 
         first = compilationRepository.save(
                 Compilation.builder().title("Первая").pinned(true).build());
@@ -100,6 +125,17 @@ class CompilationPublicControllerTest {
                 .andExpect(jsonPath("$.id").value(first.getId()))
                 .andExpect(jsonPath("$.title").value("Первая"))
                 .andExpect(jsonPath("$.pinned").value(true));
+    }
+
+    @Test
+    void shouldReturnEventsOfCompilation() throws Exception {
+        compilationEventRepository.save(new CompilationEvent(new CompilationEventId(first.getId(), 1L)));
+
+        mockMvc.perform(get(PUBLIC_PATH + "/{compId}", first.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.events", hasSize(1)))
+                .andExpect(jsonPath("$.events[0].id").value(1))
+                .andExpect(jsonPath("$.events[0].title").value("Событие 1"));
     }
 
     @Test
