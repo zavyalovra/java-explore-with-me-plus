@@ -1152,6 +1152,12 @@
                   "    pm.expect(pm.response.json()).to.have.property(\"id\");",
                   "});",
                   "",
+                  "pm.test(\"Подборка содержит переданное событие\", function () {",
+                  "    const events = pm.response.json().events;",
+                  "    pm.expect(events).to.be.an(\"array\").with.lengthOf(1);",
+                  "    pm.expect(events[0].id).to.eql(Number(pm.collectionVariables.get(\"eventId\")));",
+                  "});",
+                  "",
                   "// сохраняем id для следующих запросов",
                   "const body = pm.response.json();",
                   "if (body && body.id !== undefined) {",
@@ -1180,10 +1186,10 @@
               ],
               "query": []
             },
-            "description": "Добавление новой подборки (подборка может не содержать событий)",
+            "description": "Добавление новой подборки. Проверяем, что переданное событие попало в неё.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"events\": [],\n  \"pinned\": true,\n  \"title\": \"Летние концерты\"\n}",
+              "raw": "{\n  \"events\": [{{eventId}}],\n  \"pinned\": true,\n  \"title\": \"Летние концерты\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1320,6 +1326,12 @@
                   "    pm.response.to.be.withBody;",
                   "    pm.response.to.be.json;",
                   "    pm.expect(pm.response.json()).to.be.an(\"object\");",
+                  "});",
+                  "",
+                  "pm.test(\"Событие найдено в подборке\", function () {",
+                  "    const events = pm.response.json().events;",
+                  "    pm.expect(events).to.be.an(\"array\").with.lengthOf(1);",
+                  "    pm.expect(events[0].id).to.eql(Number(pm.collectionVariables.get(\"eventId\")));",
                   "});"
                 ]
               }
