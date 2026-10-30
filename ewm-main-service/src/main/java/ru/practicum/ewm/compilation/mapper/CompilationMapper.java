@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 import ru.practicum.ewm.compilation.dto.CompilationDto;
 import ru.practicum.ewm.compilation.dto.NewCompilationDto;
 import ru.practicum.ewm.compilation.model.Compilation;
+import ru.practicum.ewm.event.dto.EventShortDto;
 
 import java.util.List;
 
@@ -17,12 +18,12 @@ public class CompilationMapper {
                 .build();
     }
 
-    public CompilationDto toDto(Compilation compilation) {
+    public CompilationDto toDto(Compilation compilation, List<EventShortDto> events) {
         return CompilationDto.builder()
                 .id(compilation.getId())
                 .title(compilation.getTitle())
                 .pinned(compilation.isPinned())
-                .events(List.of())
+                .events(events)
                 .build();
     }
 }

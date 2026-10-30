@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import ru.practicum.ewm.compilation.dto.CompilationDto;
@@ -12,8 +13,10 @@ import ru.practicum.ewm.compilation.dto.UpdateCompilationRequest;
 import ru.practicum.ewm.compilation.model.CompilationEvent;
 import ru.practicum.ewm.compilation.repository.CompilationEventRepository;
 import ru.practicum.ewm.compilation.repository.CompilationRepository;
+import ru.practicum.ewm.event.dto.EventShortDto;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
+import ru.practicum.ewm.stats.client.StatsClient;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -44,6 +47,9 @@ class CompilationServiceIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @MockBean
+    private StatsClient statsClient;
+
     @BeforeEach
     void setUp() {
         compilationEventRepository.deleteAll();
@@ -69,7 +75,8 @@ class CompilationServiceIntegrationTest {
         assertNotNull(created.getId());
         assertEquals("С событиями", created.getTitle());
         assertTrue(created.getPinned());
-        assertTrue(created.getEvents().isEmpty());
+        assertEquals(List.of(1L, 2L), created.getEvents().stream().map(EventShortDto::getId).toList());
+        assertEquals("Событие 1", created.getEvents().get(0).getTitle());
 
         List<CompilationEvent> links = compilationEventRepository.findByIdCompilationId(created.getId());
         assertEquals(2, links.size());
@@ -79,11 +86,37 @@ class CompilationServiceIntegrationTest {
     }
 
     @Test
+    void shouldReturnEventsInGetById() {
+        CompilationDto created = compilationService.create(
+                new NewCompilationDto("Подборка", false, Set.of(1L)));
+
+        CompilationDto found = compilationService.getById(created.getId());
+
+        assertEquals(1, found.getEvents().size());
+        assertEquals(1L, found.getEvents().get(0).getId());
+    }
+
+    @Test
+    void shouldReturnEventsInGetAll() {
+        compilationService.create(new NewCompilationDto("Первая", true, Set.of(1L, 2L)));
+        compilationService.create(new NewCompilationDto("Вторая", false, null));
+
+        List<CompilationDto> compilations = compilationService.getAll(null, 0, 10);
+
+        assertEquals(2, compilations.size());
+        assertEquals(2, compilations.get(0).getEvents().size());
+        assertTrue(compilations.get(1).getEvents().isEmpty());
+    }
+
+    @Test
     void shouldReplaceEventsOnUpdate() {
         CompilationDto created = compilationService.create(
                 new NewCompilationDto("Подборка", false, Set.of(1L, 2L)));
 
-        compilationService.update(created.getId(), new UpdateCompilationRequest(null, null, Set.of(2L)));
+        CompilationDto updated = compilationService.update(created.getId(),
+                new UpdateCompilationRequest(null, null, Set.of(2L)));
+
+        assertEquals(List.of(2L), updated.getEvents().stream().map(EventShortDto::getId).toList());
 
         List<CompilationEvent> links = compilationEventRepository.findByIdCompilationId(created.getId());
         assertEquals(1, links.size());
@@ -95,8 +128,10 @@ class CompilationServiceIntegrationTest {
         CompilationDto created = compilationService.create(
                 new NewCompilationDto("Подборка", false, Set.of(1L)));
 
-        compilationService.update(created.getId(), new UpdateCompilationRequest(null, null, Set.of()));
+        CompilationDto updated = compilationService.update(created.getId(),
+                new UpdateCompilationRequest(null, null, Set.of()));
 
+        assertTrue(updated.getEvents().isEmpty());
         assertTrue(compilationEventRepository.findByIdCompilationId(created.getId()).isEmpty());
     }
 
@@ -105,10 +140,35 @@ class CompilationServiceIntegrationTest {
         CompilationDto created = compilationService.create(
                 new NewCompilationDto("Подборка", false, Set.of(1L)));
 
-        compilationService.update(created.getId(), new UpdateCompilationRequest("Новое имя", true, null));
+        CompilationDto updated = compilationService.update(created.getId(),
+                new UpdateCompilationRequest("Новое имя", true, null));
 
+        assertEquals("Новое имя", updated.getTitle());
+        assertEquals(1, updated.getEvents().size());
         assertEquals(1, compilationEventRepository.findByIdCompilationId(created.getId()).size());
-        assertEquals("Новое имя", compilationService.getById(created.getId()).getTitle());
+    }
+
+    @Test
+    void shouldThrowNotFoundForMissingEventOnCreate() {
+        NewCompilationDto dto = new NewCompilationDto("С фантомом", false, Set.of(1L, 999L));
+
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> compilationService.create(dto));
+
+        assertEquals("Event with id=999 was not found", exception.getMessage());
+        assertTrue(compilationRepository.findAll().isEmpty());
+    }
+
+    @Test
+    void shouldThrowNotFoundForMissingEventOnUpdate() {
+        CompilationDto created = compilationService.create(
+                new NewCompilationDto("Подборка", false, Set.of(1L)));
+
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> compilationService.update(created.getId(),
+                        new UpdateCompilationRequest(null, null, Set.of(999L))));
+
+        assertEquals("Event with id=999 was not found", exception.getMessage());
     }
 
     @Test

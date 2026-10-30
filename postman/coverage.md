@@ -99,7 +99,9 @@
 | ☐ | `DELETE` | `/admin/compilations/{compId}` | `deleteCompilation` | 204 | — |
 | ☐ | `PATCH` | `/admin/compilations/{compId}` | `updateCompilation` | 200 | — |
 
-Особенности: подборка может быть без событий (`events` — пустой массив).
+Особенности: подборка может быть без событий (`events` — пустой массив). В коллекции
+`saveCompilation` передаёт `eventId` из папки «События» и проверяет, что событие попало
+в подборку, а `getCompilation` — что оно там же и возвращается.
 
 ### Admin: Пользователи
 
