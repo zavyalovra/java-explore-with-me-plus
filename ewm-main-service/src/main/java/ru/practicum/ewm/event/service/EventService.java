@@ -50,15 +50,15 @@ public class EventService {
     @Transactional
     public EventFullDto create(Long userId, NewEventDto dto) {
 
-        if (dto.eventDate().isBefore(LocalDateTime.now().plusHours(2))) {
+        if (dto.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
             throw new BadRequestException("Событие должно начинаться не раньше чем через 2 часа");
         }
 
         User initiator = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + userId + " не найден"));
 
-        Category category = categoryRepository.findById(dto.category())
-                .orElseThrow(() -> new NotFoundException("Категория с ID " + dto.category() + " не найдена"));
+        Category category = categoryRepository.findById(dto.getCategory())
+                .orElseThrow(() -> new NotFoundException("Категория с ID " + dto.getCategory() + " не найдена"));
 
         Event event = eventMapper.toEntity(dto, initiator, category);
 
@@ -326,7 +326,7 @@ public class EventService {
         }
 
         if (request.location() != null) {
-            event.setLocation(new Location(request.location().lat(), request.location().lon()));
+            event.setLocation(new Location(request.location().getLat(), request.location().getLon()));
         }
 
         if (request.paid() != null) {

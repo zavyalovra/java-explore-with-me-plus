@@ -2,59 +2,76 @@ package ru.practicum.ewm.event.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-public record NewEventDto(
+@Getter
+@Setter
+@ToString
+@EqualsAndHashCode
+@NoArgsConstructor
+public class NewEventDto {
 
-        @NotBlank
-        @Size(min = 20, max = 2000)
-        String annotation,
+    @NotBlank
+    @Size(min = 20, max = 2000)
+    private String annotation;
 
-        @NotNull
-        @Positive
-        Long category,
+    @NotNull
+    @Positive
+    private Long category;
 
-        @NotBlank
-        @Size(min = 20, max = 7000)
-        String description,
+    @NotBlank
+    @Size(min = 20, max = 7000)
+    private String description;
 
-        @NotNull
-        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-        LocalDateTime eventDate,
+    @NotNull
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime eventDate;
 
-        @NotNull
-        @Valid
-        LocationDto location,
+    @NotNull
+    @Valid
+    private LocationDto location;
 
-        Boolean paid,
+    private Boolean paid;
 
-        @PositiveOrZero
-        Integer participantLimit,
+    @PositiveOrZero
+    private Integer participantLimit;
 
-        Boolean requestModeration,
+    private Boolean requestModeration;
 
-        @NotBlank
-        @Size(min = 3, max = 120)
-        String title
+    @NotBlank
+    @Size(min = 3, max = 120)
+    private String title;
 
-) {
-    public NewEventDto {
-        if (paid == null) {
-            paid = false;
+    public NewEventDto(String annotation,
+                       Long category,
+                       String description,
+                       LocalDateTime eventDate,
+                       LocationDto location,
+                       Boolean paid,
+                       Integer participantLimit,
+                       Boolean requestModeration,
+                       String title) {
+        this.annotation = annotation;
+        this.category = category;
+        this.description = description;
+        this.eventDate = eventDate;
+        this.location = location;
+        this.paid = paid;
+        this.participantLimit = participantLimit;
+        this.requestModeration = requestModeration;
+        this.title = title;
+
+        if (this.paid == null) {
+            this.paid = false;
         }
-
-        if (participantLimit == null) {
-            participantLimit = 0;
+        if (this.participantLimit == null) {
+            this.participantLimit = 0;
         }
-
-        if (requestModeration == null) {
-            requestModeration = true;
+        if (this.requestModeration == null) {
+            this.requestModeration = true;
         }
     }
 }

@@ -22,16 +22,16 @@ public class EventMapper {
 
     public Event toEntity(NewEventDto dto, User initiator, Category category) {
         return Event.builder()
-                .title(dto.title())
-                .annotation(dto.annotation())
-                .description(dto.description())
+                .title(dto.getTitle())
+                .annotation(dto.getAnnotation())
+                .description(dto.getDescription())
                 .initiator(initiator)
                 .category(category)
-                .eventDate(dto.eventDate())
-                .location(toLocation(dto.location()))
-                .paid(dto.paid())
-                .participantLimit(dto.participantLimit())
-                .requestModeration(dto.requestModeration())
+                .eventDate(dto.getEventDate())
+                .location(toLocation(dto.getLocation()))
+                .paid(dto.getPaid())
+                .participantLimit(dto.getParticipantLimit())
+                .requestModeration(dto.getRequestModeration())
                 .build();
     }
 
@@ -71,7 +71,7 @@ public class EventMapper {
     }
 
     private Location toLocation(LocationDto dto) {
-        return new Location(dto.lat(), dto.lon());
+        return new Location(dto.getLat(), dto.getLon());
     }
 
     private LocationDto toLocationDto(Location location) {
