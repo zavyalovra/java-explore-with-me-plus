@@ -1,6 +1,16 @@
 package ru.practicum.ewm.event.dto;
 
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import lombok.AllArgsConstructor;
 
-public record LocationDto(@NotNull Double lat, @NotNull Double lon) {
+@Data
+@AllArgsConstructor
+public class LocationDto {
+
+    @NotNull
+    private Double lat;
+
+    @NotNull
+    private Double lon;
 }

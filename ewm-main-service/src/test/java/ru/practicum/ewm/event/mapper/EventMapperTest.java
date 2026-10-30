@@ -103,7 +103,7 @@ class EventMapperTest {
         assertEquals(15L, fullDto.getConfirmedRequests());
         assertEquals(100L, fullDto.getViews());
 
-        assertEquals(55.75, fullDto.getLocation().lat());
+        assertEquals(55.75, fullDto.getLocation().getLat());
 
         assertEquals(10L, shortDto.getId());
         assertEquals(15L, shortDto.getConfirmedRequests());
