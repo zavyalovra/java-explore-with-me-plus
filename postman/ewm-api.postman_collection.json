@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "3c9f2b1e-6d4a-4f1b-9c7e-a1b2c3d4e5f6",
-    "name": "EWM — API (28 эндпоинтов)",
-    "description": "Коллекция сгенерирована из ewm-main-service-spec.json и ewm-stats-service-spec.json.\n\nПорядок запуска — сверху вниз, папки упорядочены по зависимостям данных:\n00 Статистика → 01 Setup → 02 Категории → 03 События → 04 Модерация → 05 Public → 06 Заявки → 07 Подтверждение → 08 Подборки → 09–10 Admin → 11 Очистка.\n\nОбязательно выберите окружение \"EWM local\" (baseUrl, statsUrl, ids, даты).\nВсе id приходят из Setup: userId, userId2, catId, eventId, requestId, compId.\n\nТесты базовые: код ответа + наличие тела + формат JSON. Негативные кейсы — отдельно, по postman/collection-tests.md.",
+    "name": "EWM — API (28 эндпоинтов + 10 комментариев)",
+    "description": "Коллекция сгенерирована из ewm-main-service-spec.json и ewm-stats-service-spec.json.\nДополнительно добавлена папка «11 · Комментарии» — это фича вне спецификации (issue #6), её эндпоинтов в спеке нет.\n\nПорядок запуска — сверху вниз, папки упорядочены по зависимостям данных:\n00 Статистика → 01 Setup → 02 Категории → 03 События → 04 Модерация → 05 Public → 06 Заявки → 07 Подтверждение → 08 Подборки → 09–10 Admin → 11 Комментарии → 12 Очистка.\n\nОбязательно выберите окружение \"EWM local\" (baseUrl, statsUrl, даты).\nВсе id приходят из Setup: userId, userId2, catId, eventId, requestId, compId, commentId — скрипты кладут их в переменные коллекции.\nНе дублируйте id в окружении пустыми значениями: переменная окружения перекрывает переменную коллекции, и в запрос уйдёт пустая строка.\n\nТесты базовые: код ответа + наличие тела + формат JSON. Негативные кейсы — отдельно, по postman/collection-tests.md.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -1480,7 +1480,525 @@
       ]
     },
     {
-      "name": "11 · Очистка (запускать последней)",
+      "name": "11 · Комментарии",
+      "item": [
+        {
+          "name": "addComment — создать комментарий (автор)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 201\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Ответ содержит тело в формате JSON\", function () {",
+                  "    pm.response.to.be.withBody;",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test(\"Новый комментарий в статусе PENDING\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"PENDING\");",
+                  "});",
+                  "",
+                  "// сохраняем id для следующих запросов",
+                  "const body = pm.response.json();",
+                  "if (body && body.id !== undefined) {",
+                  "    pm.collectionVariables.set(\"commentId\", body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "comments"
+              ],
+              "query": []
+            },
+            "description": "Создание комментария к опубликованному событию. Статус — PENDING, публично не виден до одобрения администратором.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": {{eventId}},\n  \"text\": \"Отличное событие, обязательно пойду!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getEventComments — комментарии события (только одобренные)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Тело ответа — JSON-массив\", function () {",
+                  "    pm.response.to.be.withBody;",
+                  "    pm.response.to.be.json;",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\");",
+                  "});",
+                  "",
+                  "pm.test(\"До одобрения публичный список пуст\", function () {",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\").that.is.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{eventId}}",
+                "comments"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "0",
+                  "description": "количество элементов, которые нужно пропустить для формирования текущего набора",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "количество элементов в наборе",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Публичный список комментариев события. Отдаются только комментарии со статусом APPROVED, свежие сверху."
+          },
+          "response": []
+        },
+        {
+          "name": "approveComment — одобрить комментарий (админ)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Статус комментария APPROVED\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"APPROVED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/comments/{{commentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "comments",
+                "{{commentId}}"
+              ],
+              "query": []
+            },
+            "description": "Модерация комментария. Одобрять и отклонять можно только комментарии в статусе PENDING.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getEventComments_1 — комментарии события после одобрения",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Одобренный комментарий виден публично\", function () {",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\").with.lengthOf(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{eventId}}",
+                "comments"
+              ],
+              "query": []
+            },
+            "description": "Проверяем, что после одобрения комментарий появился в публичном списке."
+          },
+          "response": []
+        },
+        {
+          "name": "likeComment — лайк комментария (участник)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 201\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Счётчик лайков равен 1\", function () {",
+                  "    pm.expect(pm.response.json().likes).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId2}}/comments/{{commentId}}/likes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId2}}",
+                "comments",
+                "{{commentId}}",
+                "likes"
+              ],
+              "query": []
+            },
+            "description": "Лайк поставить можно только одобренному комментарию и только один раз на пользователя."
+          },
+          "response": []
+        },
+        {
+          "name": "getOwnComments — свои комментарии (автор)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Автор видит свой комментарий\", function () {",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\").with.lengthOf(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "comments"
+              ],
+              "query": []
+            },
+            "description": "Список комментариев автора. В отличие от публичного списка здесь видны все статусы."
+          },
+          "response": []
+        },
+        {
+          "name": "unlikeComment — снять лайк",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 204\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(204);",
+                  "});",
+                  "",
+                  "pm.test(\"Тело ответа пустое\", function () {",
+                  "    pm.expect(pm.response.text()).to.eql(\"\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId2}}/comments/{{commentId}}/likes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId2}}",
+                "comments",
+                "{{commentId}}",
+                "likes"
+              ],
+              "query": []
+            },
+            "description": "Снятие своего лайка с комментария."
+          },
+          "response": []
+        },
+        {
+          "name": "updateComment — правка комментария (снова PENDING)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"После правки статус возвращается в PENDING\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"PENDING\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "comments",
+                "{{commentId}}"
+              ],
+              "query": []
+            },
+            "description": "Редактировать комментарий может только его автор. После правки требуется повторная модерация.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Отличное событие, но место перенесли\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getEventComments_2 — после правки снова скрыт",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Отредактированный комментарий публично не виден\", function () {",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\").that.is.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "{{eventId}}",
+                "comments"
+              ],
+              "query": []
+            },
+            "description": "Пока комментарий не одобрен повторно, в публичном списке его нет."
+          },
+          "response": []
+        },
+        {
+          "name": "rejectComment — отклонить комментарий с причиной (админ)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Статус комментария REJECTED\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"REJECTED\");",
+                  "});",
+                  "",
+                  "pm.test(\"Причина отклонения сохранена\", function () {",
+                  "    pm.expect(pm.response.json().moderationReason).to.eql(\"Не по теме события\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/comments/{{commentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "comments",
+                "{{commentId}}"
+              ],
+              "query": []
+            },
+            "description": "При отклонении причина обязательна, иначе 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"REJECTED\",\n  \"moderationReason\": \"Не по теме события\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteComment — удалить комментарий (админ)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 204\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(204);",
+                  "});",
+                  "",
+                  "pm.test(\"Тело ответа пустое\", function () {",
+                  "    pm.expect(pm.response.text()).to.eql(\"\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/comments/{{commentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "comments",
+                "{{commentId}}"
+              ],
+              "query": []
+            },
+            "description": "Администратор может удалить любой комментарий. Автор может удалить только свой — через /users/{userId}/comments/{commentId}."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "12 · Очистка (запускать последней)",
       "item": [
         {
           "name": "cancelRequest — отменить свою заявку (участник)",
