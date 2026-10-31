@@ -40,6 +40,8 @@ public class EventService {
 
     private static final Sort DEFAULT_SORT = Sort.by(Sort.Direction.ASC, "id");
 
+    private static final String X_FORWARDED_FOR = "X-Forwarded-For";
+
     private final EventResponseService eventResponseService;
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
@@ -197,14 +199,7 @@ public class EventService {
                 .findByIdAndState(eventId, EventState.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Событие с ID " + eventId + " не найдено"));
 
-        EndpointHitDto hit = EndpointHitDto.builder()
-                .app("ewm-main-service")
-                .uri(request.getRequestURI())
-                .ip(request.getRemoteAddr())
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        statsClient.saveHit(hit);
+        recordPublicHit(request);
 
         return eventResponseService.toFullDto(event);
     }
@@ -301,11 +296,30 @@ public class EventService {
         EndpointHitDto hit = EndpointHitDto.builder()
                 .app("ewm-main-service")
                 .uri(request.getRequestURI())
-                .ip(request.getRemoteAddr())
+                .ip(resolveClientIp(request))
                 .timestamp(LocalDateTime.now())
                 .build();
 
         statsClient.saveHit(hit);
+    }
+
+    /**
+     * Определяет публичный адрес клиента для статистики. За шлюзом или прокси
+     * {@link HttpServletRequest#getRemoteAddr()} возвращает адрес промежуточного сервера,
+     * поэтому приоритет отдаётся первому адресу из заголовка {@code X-Forwarded-For}.
+     */
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader(X_FORWARDED_FOR);
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            for (String address : forwardedFor.split(",")) {
+                String candidate = address.trim();
+                if (!candidate.isEmpty() && !"unknown".equalsIgnoreCase(candidate)) {
+                    return candidate;
+                }
+            }
+        }
+
+        return request.getRemoteAddr();
     }
 
     private void applyCommonUpdates(Event event, EventUpdateData request) {
