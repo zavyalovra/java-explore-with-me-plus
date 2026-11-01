@@ -129,6 +129,46 @@ class EventPublicControllerTest {
     }
 
     @Test
+    void shouldTakeClientIpFromXForwardedFor() throws Exception {
+        Event event = createEvent(EventState.PUBLISHED);
+
+        mockMvc.perform(get("/events/{id}", event.getId())
+                        .header("X-Forwarded-For", "203.0.113.7, 10.0.0.1")
+                        .with(request -> {
+                            request.setRemoteAddr("192.0.2.10");
+                            return request;
+                        }))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<EndpointHitDto> captor =
+                ArgumentCaptor.forClass(EndpointHitDto.class);
+
+        verify(statsClient).saveHit(captor.capture());
+
+        assertEquals("203.0.113.7", captor.getValue().getIp());
+    }
+
+    @Test
+    void shouldFallBackToRemoteAddrWhenForwardedForHasNoAddress() throws Exception {
+        Event event = createEvent(EventState.PUBLISHED);
+
+        mockMvc.perform(get("/events/{id}", event.getId())
+                        .header("X-Forwarded-For", " , unknown")
+                        .with(request -> {
+                            request.setRemoteAddr("192.0.2.10");
+                            return request;
+                        }))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<EndpointHitDto> captor =
+                ArgumentCaptor.forClass(EndpointHitDto.class);
+
+        verify(statsClient).saveHit(captor.capture());
+
+        assertEquals("192.0.2.10", captor.getValue().getIp());
+    }
+
+    @Test
     void shouldReturnNotFoundForPendingEvent() throws Exception {
         Event event = createEvent(EventState.PENDING);
 
