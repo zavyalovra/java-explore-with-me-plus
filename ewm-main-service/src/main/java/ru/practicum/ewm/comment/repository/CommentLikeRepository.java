@@ -12,8 +12,6 @@ import java.util.List;
 
 public interface CommentLikeRepository extends JpaRepository<CommentLike, CommentLikeId> {
 
-    long countById_CommentId(Long commentId);
-
     @Query("select l.id.commentId as commentId, count(l) as likes from CommentLike l "
             + "where l.id.commentId in :commentIds group by l.id.commentId")
     List<CommentLikeCount> countByCommentIds(@Param("commentIds") Collection<Long> commentIds);

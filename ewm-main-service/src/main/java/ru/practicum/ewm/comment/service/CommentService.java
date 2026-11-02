@@ -206,10 +206,12 @@ public class CommentService {
         }
     }
 
+    /**
+     * Единая точка сборки DTO: одиночный комментарий проходит тот же путь загрузки,
+     * что и список, поэтому новые поля DTO не требуют правок в двух местах.
+     */
     private CommentDto toDto(Comment comment) {
-        long likes = commentLikeRepository.countById_CommentId(comment.getId());
-        Map<Long, User> authors = findAuthors(Set.of(comment.getAuthorId()));
-        return commentMapper.toDto(comment, authors, likes);
+        return toDtoList(List.of(comment)).get(0);
     }
 
     private List<CommentDto> toDtoList(List<Comment> comments) {
@@ -224,16 +226,17 @@ public class CommentService {
                 .map(Comment::getId)
                 .toList();
 
-        Map<Long, User> authors = findAuthors(authorIds);
-        Map<Long, Long> likes = commentLikeRepository.countByCommentIds(commentIds).stream()
-                .collect(Collectors.toMap(CommentLikeCount::getCommentId, CommentLikeCount::getLikes));
-
-        return commentMapper.toDtoList(comments, authors, likes);
+        return commentMapper.toDtoList(comments, findAuthors(authorIds), findLikes(commentIds));
     }
 
     private Map<Long, User> findAuthors(Collection<Long> authorIds) {
         return userRepository.findAllById(authorIds).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
+    }
+
+    private Map<Long, Long> findLikes(Collection<Long> commentIds) {
+        return commentLikeRepository.countByCommentIds(commentIds).stream()
+                .collect(Collectors.toMap(CommentLikeCount::getCommentId, CommentLikeCount::getLikes));
     }
 
     private void validatePagination(int from, int size) {
