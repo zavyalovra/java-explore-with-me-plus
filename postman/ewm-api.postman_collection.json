@@ -35,13 +35,9 @@
                   "    pm.expect(pm.response.code).to.eql(201);",
                   "});",
                   "",
-                  "pm.test(\"Ответ содержит тело в формате JSON\", function () {",
-                  "    pm.response.to.be.withBody;",
-                  "    pm.response.to.be.json;",
-                  "});",
-                  "",
-                  "pm.test(\"В ответе есть id\", function () {",
-                  "    pm.expect(pm.response.json()).to.have.property(\"id\");",
+                  "// по спецификации у POST /hit тело ответа пустое",
+                  "pm.test(\"Тело ответа пустое\", function () {",
+                  "    pm.expect(pm.response.text()).to.eql(\"\");",
                   "});"
                 ]
               }
@@ -1116,7 +1112,7 @@
             "description": "Обратите внимание:\n- если для события лимит заявок равен 0 или отключена пре-модерация заявок, то подтверждение заявок не требуется\n- нельзя подтвердить заявку, если уже достигнут лимит по заявкам на данное событие (Ожидается код ошибки 409)\n- статус можно изменить только у заявок, находящихся в состоянии ожидания (Ожидается код ошибки 409)\n- если при подтверждении данной заявки, лимит заявок для события исчерпан, то все неподтверждённые заявки необходимо отклонить",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"requestIds\": {{requestId}},\n  \"status\": \"CONFIRMED\"\n}",
+              "raw": "{\n  \"requestIds\": [{{requestId}}],\n  \"status\": \"CONFIRMED\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2081,44 +2077,6 @@
           "response": []
         },
         {
-          "name": "deleteCategory — удалить категорию",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Код ответа 204\", function () {",
-                  "    pm.expect(pm.response.code).to.eql(204);",
-                  "});",
-                  "",
-                  "pm.test(\"Тело ответа пустое\", function () {",
-                  "    pm.expect(pm.response.text()).to.eql(\"\");",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/admin/categories/{{catId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "admin",
-                "categories",
-                "{{catId}}"
-              ],
-              "query": []
-            },
-            "description": "Обратите внимание: с категорией не должно быть связано ни одного события."
-          },
-          "response": []
-        },
-        {
           "name": "delete — удалить пользователя (участник)",
           "event": [
             {
@@ -2153,6 +2111,82 @@
               "query": []
             },
             "description": "Удаление пользователя"
+          },
+          "response": []
+        },
+        {
+          "name": "delete — удалить пользователя (автор события)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 204\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(204);",
+                  "});",
+                  "",
+                  "pm.test(\"Тело ответа пустое\", function () {",
+                  "    pm.expect(pm.response.text()).to.eql(\"\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{userId}}"
+              ],
+              "query": []
+            },
+            "description": "Удаление автора события: события удаляются каскадом, после этого категория становится свободной."
+          },
+          "response": []
+        },
+        {
+          "name": "deleteCategory — удалить категорию",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 204\", function () {",
+                  "    pm.expect(pm.response.code).to.eql(204);",
+                  "});",
+                  "",
+                  "pm.test(\"Тело ответа пустое\", function () {",
+                  "    pm.expect(pm.response.text()).to.eql(\"\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/categories/{{catId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "categories",
+                "{{catId}}"
+              ],
+              "query": []
+            },
+            "description": "Категория удаляется последней — когда события автора уже удалены каскадом."
           },
           "response": []
         }
